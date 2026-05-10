@@ -1,0 +1,25 @@
+/*NF: Created "Settings" page CSS file*/
+/*Reference Material: https://www.youtube.com/watch?v=DzZbbXaLWeE*/
+#change-mode {
+    height: 30px;
+    width: 30px;
+    padding: 0;
+    border-radius: 20%;
+    background-color: #c6c8d2;
+}
+
+#change-mode svg {
+    fill: var(--text-secondary);
+}
+
+#change-mode svg:last-child {
+    display: none;
+}
+
+.darkmode #change-mode svg:first-child {
+    display: none;
+}
+
+.darkmode #change-mode svg:last-child {
+    display: block;
+}

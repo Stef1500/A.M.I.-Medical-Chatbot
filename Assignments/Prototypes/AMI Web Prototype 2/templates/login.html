@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>A.M.I.</title>
+    <link rel = "stylesheet" href = "../static/styles.css">
+    <link rel = "stylesheet" href = "../static/checkIn.css">
+    <!--NF:Dark mode implementation-->
+    <script type = "text/javascript" src = "../static/darkmode.js" defer></script>
+</head>
+<body>
+    <!--NF: Back to homepage-->
+    <!--SB: Modified go back so is inside checkin-area and fixed error message positioning-->
+        <div class = "checkIn-area">
+                <div class = "go-back">
+            <a href = "/" style = "color: inherit; text-decoration: none;">
+                <h4>Go back</h4>
+            </a>
+        </div>
+
+        <h2>LOGIN</h2>
+
+        {% with messages  = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p class="error-message">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <input name="username" placeholder="Username" required />
+            <input name="password" type="password" placeholder="Password" required />
+            <br>
+            <button type="submit">Login</button>
+        </form>
+        <!--NF: Made the register button more visible-->
+        <a href="/register" style = "color: inherit; text-decoration: none;"><h6>Don't have an account?</h6></a>
+    </div>
+</body>
+</html>

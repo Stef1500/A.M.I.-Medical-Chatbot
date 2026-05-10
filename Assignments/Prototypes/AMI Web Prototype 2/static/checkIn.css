@@ -1,0 +1,136 @@
+/*NF: Created "CheckIn" page CSS file*/
+/*SB: changed style to get rid of incomplete borders and make it look more modern*/
+.checkIn-area {
+    position: relative;
+    margin: 100px auto;
+    width: 360px;
+    padding: 30px;
+
+    border-radius: 18px;
+    border: 1px solid var(--border);
+
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px);
+
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+
+    animation: fade-up 0.6s ease;
+}
+
+
+.darkmode .checkIn-area {
+    background: rgba(30, 30, 30, 0.6);
+}
+
+
+.checkIn-area h2 {
+    text-align: center;
+    margin: 0;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+
+.checkIn-area input {
+    width: 92%;
+    padding: 12px 14px;
+
+    border-radius: 12px;
+    border: 1px solid var(--input-border);
+
+    background: rgba(255,255,255,0.8);
+    outline: none;
+
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+
+.darkmode .checkIn-area input {
+    background: rgba(50,50,50,0.8);
+}
+
+
+.checkIn-area input:focus {
+    border-color: black;
+    box-shadow: 0 0 0 2px rgba(0,122,255,0.2);
+}
+
+
+.checkIn-area button {
+    width: 100%;
+    padding: 12px;
+
+    border-radius: 12px;
+    border: none;
+
+    background: black;
+    color: white;
+
+    font-weight: 600;
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+
+.checkIn-area button:hover {
+    background: #2F2F2F;
+    transform: translateY(-1px);
+}
+
+
+.checkIn-area h6 {
+    margin: 0;
+    text-align: center;
+    font-size: 13px;
+
+    opacity: 0.7;
+    border: none;
+    background: transparent;
+}
+
+
+.go-back {
+    position: absolute;
+    top: 33px;
+    left: 31px;
+}
+
+.go-back h4 {
+    margin: 0;
+    padding: 5px 10px;
+
+    border-radius: 10px;
+    border: 1px solid var(--border);
+
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(10px);
+
+    font-size: 14px;
+    font-weight: 500;
+
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.darkmode .go-back h4 {
+    background: rgba(40,40,40,0.6);
+}
+
+
+.go-back h4:hover {
+    transform: translateY(-1px);
+    background: rgba(255,255,255,0.8);
+}
+
+.error-message {
+    margin: 8px 0 5px 0; /* pulls it closer to LOGIN */
+    padding: 0;
+    color: red;
+    font-size: 14px;
+}

@@ -1,0 +1,1 @@
+Google Fonts are open-source as stated in their FAQ (link: https://developers.google.com/fonts/faq)

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>A.M.I.</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+<script src="https://unpkg.com/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
+<script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+<script src="https://unpkg.com/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
+    <!--NF: Dark mode implementation-->
+<script type = "text/javascript" src = "../static/darkmode.js" defer></script>
+</head>
+<body>
+
+<div class="app">
+
+
+<!-- LEFT SIDEBAR -->
+
+
+<aside class="sidebar">
+    <div class="logo">AMI</div>
+    <button id="newChat" class="new-chat" style = "color: inherit; text-decoration: none;">+ New Chat</button>
+    <div id="chatMenu" class="menu">
+    </div>
+
+
+
+    <div class="bottom">
+        <!--NF: Added the Settings link & moved breakline-->
+        <a href="/settings" style = "color: inherit; text-decoration: none;">⚙️ Settings</a>
+        <br>
+        <a href="/logout" style = "color: inherit; text-decoration: none;"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff"><path d="M367-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z"/></svg> Logout</a>
+    </div>
+</aside>
+
+<!-- MAIN CHAT -->
+<main id="chatArea" class="chat">
+
+    <div class="messages" id="messages">
+        <div class="message ai">
+            <div class="avatar-icon">
+            </div>
+
+        </div>
+    </div>
+
+    <div class="input-area">
+        <input id="chatInput" type="text" placeholder="Message AMI...">
+        <button id="sendBtn">➤</button>
+    </div>
+
+</main>
+
+<!-- RIGHT PANEL (AVATAR) -->
+<aside class="right-panel">
+
+    <div class="avatar-card">
+        <div id="status">Starting...</div>
+        <div id="avatar-stage"></div>
+        <h3>A.M.I.</h3>
+    </div>
+
+    <div class="info-card">
+        <p>Live2D avatar reacts to messages.</p>
+    </div>
+
+</aside>
+
+</div>
+
+<script>
+
+//chatlogic
+
+const input = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+const messages = document.getElementById("messages");
+
+function addMessage(text, sender="user") {
+    const div = document.createElement("div");
+    div.className = `message ${sender}`;
+
+    if (sender === "ai") {
+        div.innerHTML = `
+            <div class="avatar-icon">
+                <img src="/static/models/avatar.png" alt="AI">
+            </div>
+            <div class="bubble">${text}</div>
+        `;
+    } else {
+        div.innerHTML = `<div class="bubble">${text}</div>`;
+    }
+
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+
+        if (currentChatId) {
+        fetch("/add_message", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                chat_id: currentChatId,
+                text: text,
+                sender: sender
+            })
+        });
+    } else {
+        console.warn("No active chat selected!");
+    }
+}
+
+//reaction map for what people type and how avatar should react with expressions and effects
+function reactionMap(text) {
+    text = text.toLowerCase();
+
+    if (text.includes("?") || text.includes("what") || text.includes("why") || text.includes("how") || text.includes("confused")) {
+        return { face: "dazed_eyes", effects: ["question_mark"], extras: [] };
+    }
+
+    if (text.includes("love") || text.includes("cute") || text.includes("adorable")) {
+        return { face: "blush", effects: ["heart"], extras: ["finger_heart"] };
+    }
+
+    if (text.includes("angry") || text.includes("mad") || text.includes("hate")) {
+        return { face: "angry", effects: ["exclamation"], extras: [] };
+    }
+
+    if (text.includes("tired") || text.includes("sleep")) {
+        return { face: "sleeping", effects: [], extras: [] };
+    }
+
+    if (text.includes("thanks") || text.includes("thank you")) {
+        return { face: "blush", effects: ["heart"], extras: [] };
+    }
+
+    return { face: "blush", effects: [], extras: [] };
+}
+
+function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    input.value = "";
+
+    const r = reactionMap(text);
+    window.avatar.react(r.face, r.effects, r.extras);
+
+    setTimeout(() => {
+        addMessage("This is a placeholder AI response.", "ai");
+    }, 300);
+}
+
+sendBtn.onclick = sendMessage;
+input.addEventListener("keydown", e => {
+    if (e.key === "Enter") sendMessage();
+});
+
+
+
+
+
+
+
+// ****************** Chat logic ******************************************
+
+//global variable to keep track of active chat
+let currentChatId = null;
+let isLoggedIn = null;
+
+
+async function createChat(chatName) {
+        const res = await fetch("/create_chat", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ title: chatName })
+    });
+    const data = await res.json();
+
+    currentChatId = data.chat_id;
+
+    addChatToSidebar(data.chat_id, data.title);
+    setActiveChat(data.chat_id);
+    loadChat(currentChatId)
+    document.getElementById("chatInput").focus();
+}
+
+
+// logic to create new chat
+document.getElementById("newChat").addEventListener("click", async () => {
+
+     let chatName = prompt("Enter chat name:");
+         if (!chatName || chatName.trim() === "") {
+        chatName = "New Chat";
+    }
+    createChat(chatName)
+});
+
+
+// loads all chats to the sidebar
+function loadChats() {
+
+
+
+    fetch("/get_chats")
+        .then(res => res.json())
+        .then(data => {
+
+
+            if (data.logged_in === 0) {
+                isLoggedIn = false
+            } else {
+                isLoggedIn = true
+            }
+
+
+            if (!isLoggedIn) {
+                const btn = document.getElementById("newChat");
+                btn.style.display = "none";
+
+            }
+
+            const chatMenu = document.getElementById("chatMenu");
+
+            data.chats.forEach(chat => {
+                addChatToSidebar(chat._id, chat.title);
+            });
+
+            if (data.chats.length > 0) {
+                currentChatId = data.chats[data.chats.length-1]._id
+                setActiveChat(currentChatId)
+                loadChat(currentChatId)
+            } else {
+                createChat("First Chat with AMI")
+                setActiveChat(currentChatId)
+            }
+        });
+}
+
+
+// adds a chat to sidebar and redirects the user
+function addChatToSidebar(id, title) {
+    const div = document.createElement("div");
+    div.className = "chat-item";
+    div.textContent = title || "New Chat";
+    div.dataset.id = id;
+
+    div.addEventListener("click", () => {
+        loadChat(id);
+        setActiveChat(id);
+    });
+
+    document.getElementById("chatMenu").prepend(div);
+}
+
+
+//when user clicks in a chat, it loads all messages
+function loadChat(chatId) {
+    currentChatId = chatId;
+
+    fetch(`/get_chat/${chatId}`)
+        .then(res => res.json())
+        .then(data => {
+            const chatBox = document.getElementById("messages");
+            chatBox.innerHTML = "";
+
+            data.messages.forEach(msg => {
+                const wrapper = document.createElement("div");
+
+                wrapper.className = `message ${msg.sender}`;
+
+                //if the sender is the AI
+                if (msg.sender === "ai") {
+                    wrapper.innerHTML = `
+                        <div class="avatar-icon">
+                            <img src="/static/models/avatar.png">
+                        </div>
+                        <div class="bubble">${msg.text}</div>
+                    `;
+                //if the sender is the user
+                } else {
+                    wrapper.innerHTML = `
+                        <div class="bubble">${msg.text}</div>
+                    `;
+                }
+
+                chatBox.appendChild(wrapper);
+            });
+        });
+}
+
+//used when a new chat is created, redirects the user directly to it
+function setActiveChat(chatId) {
+    document.querySelectorAll(".chat-item").forEach(item => {
+        item.classList.remove("active");
+
+        if (item.dataset.id === chatId) {
+            item.classList.add("active");
+        }
+    });
+}
+
+
+
+//load chats
+window.onload = loadChats;
+//***********************************************************
+//avatar logic and sizing
+
+const statusBox = document.getElementById("status");
+
+let reactionTimer = null;
+let activeFace = null;
+let activeEffects = [];
+let activeExtras = [];
+
+function setStatus(msg) {
+    statusBox.textContent = msg;
+}
+
+function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+}
+
+function getSize() {
+    const c = document.getElementById("avatar-stage");
+    return {
+        container: c,
+        width: c.clientWidth || 320,
+        height: c.clientHeight || 420
+    };
+}
+
+function updateLayout(model, app) {
+    const { width, height } = getSize();
+
+    app.renderer.resize(width, height);
+
+    model.anchor.set(0.5, 1.05);
+    model.x = width / 2;
+    model.y = height * 3;
+    model.scale.set(0.22);
+}
+
+//how model should look
+
+async function applyBaseLook(model) {
+
+    const permaFiles = [
+        "remove_watermark.exp3.json",
+        "cat_ears_off.exp3.json",
+        "wings_off.exp3.json",
+        "hair_accessories_off.exp3.json",
+        "halo_off.exp3.json",
+        "long_ponytail_off.exp3.json",
+        "short_ponytail_left_off.exp3.json",
+        "short_ponytail_right_off.exp3.json",
+        "side_hair_off.exp3.json"
+    ];
+
+    for (const file of permaFiles) {
+        try {
+            const res = await fetch(`/static/models/${file}`);
+            if (!res.ok) throw new Error(`${file} returned ${res.status}`);
+
+            const exp = await res.json();
+
+            const core = model.internalModel.coreModel;
+
+            exp.Parameters.forEach(p => {
+                core.setParameterValueById(p.Id, p.Value, 1);
+            });
+
+            await sleep(120);
+
+        } catch (e) {
+            console.warn("Base fail:", file, e);
+        }
+    }
+}
+
+//reseter for temporary reactions to go back to idle face 
+
+function resetFace() {
+
+    if (!window.live2dModel) return;
+
+    const toClear = [];
+
+    if (activeFace) toClear.push(activeFace);
+    toClear.push(...activeEffects);
+    toClear.push(...activeExtras);
+
+    toClear.forEach(e => {
+        try { live2dModel.expression(e); } catch (err) { console.warn("Reset fail:", e, err); }
+    });
+
+    activeFace = null;
+    activeEffects = [];
+    activeExtras = [];
+
+    try {
+        live2dModel.motion("Idle");
+    } catch (err) {
+        console.warn("Idle reset fail:", err);
+    }
+}
+
+//reaction timerse and expressions
+
+function react(face, effects=[], extras=[]) {
+
+    if (!window.live2dModel) return;
+
+    if (reactionTimer) {
+        clearTimeout(reactionTimer);
+        reactionTimer = null;
+    }
+
+    resetFace();
+
+    activeFace = face || null;
+    activeEffects = [...effects];
+    activeExtras = [...extras];
+
+    if (face) {
+        try {
+            live2dModel.expression(face);
+        } catch (err) {
+            console.warn("Face react fail:", face, err);
+        }
+    }
+
+    effects.forEach(e => {
+        try {
+            live2dModel.expression(e);
+        } catch (err) {
+            console.warn("Effect react fail:", e, err);
+        }
+    });
+
+    extras.forEach(e => {
+        try {
+            live2dModel.expression(e);
+        } catch (err) {
+            console.warn("Extra react fail:", e, err);
+        }
+    });
+
+    reactionTimer = setTimeout(() => {
+        resetFace();
+        reactionTimer = null;
+    }, 3000);
+}
+
+//avatar start up
+
+async function startAvatar() {
+
+    try {
+
+        setStatus("Loading...");
+
+        const { container, width, height } = getSize();
+
+        const app = new PIXI.Application({
+            width,
+            height,
+            backgroundAlpha: 0
+        });
+
+        container.appendChild(app.view);
+
+        const model = await PIXI.live2d.Live2DModel.from("/static/models/nurse.model3.json");
+
+        app.stage.addChild(model);
+
+        window.live2dModel = model;
+        window.live2dApp = app;
+
+        updateLayout(model, app);
+
+        try {
+            model.motion("Idle");
+        } catch (err) {
+            console.warn("Idle start fail:", err);
+        }
+
+        await sleep(500);
+        await applyBaseLook(model);
+
+        window.addEventListener("resize", () => {
+            updateLayout(model, app);
+        });
+
+        setStatus("Ready");
+
+    } catch (e) {
+        console.error(e);
+        setStatus("ERROR");
+    }
+}
+
+startAvatar();
+
+window.avatar = {
+    react,
+    clear: resetFace
+};
+
+</script>
+
+</body>
+</html>

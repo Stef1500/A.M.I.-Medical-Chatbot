@@ -1,0 +1,77 @@
+{
+  "Version": 3,
+  "FileReferences": {
+    "Moc": "护士小姐.moc3",
+    "Textures": [
+      "护士小姐.8192/texture_00.png"
+    ],
+    "Physics": "护士小姐.physics3.json",
+    "DisplayInfo": "护士小姐.cdi3.json",
+    "Expressions": [
+      { "Name": "cat_ears_off", "File": "cat_ears_off.exp3.json" },
+      { "Name": "wings_off", "File": "wings_off.exp3.json" },
+      { "Name": "hair_accessories_off", "File": "hair_accessories_off.exp3.json" },
+      { "Name": "halo_off", "File": "halo_off.exp3.json" },
+      { "Name": "hat_off", "File": "hat_off.exp3.json" },
+      { "Name": "headband", "File": "headband.exp3.json" },
+
+      { "Name": "blush", "File": "blush.exp3.json" },
+      { "Name": "dark_face", "File": "dark_face.exp3.json" },
+      { "Name": "dazed_eyes", "File": "dazed_eyes.exp3.json" },
+      { "Name": "exclamation", "File": "exclamation.exp3.json" },
+      { "Name": "fly_head", "File": "fly_head.exp3.json" },
+      { "Name": "question_mark", "File": "question_mark.exp3.json" },
+      { "Name": "short_bangs", "File": "short_bangs.exp3.json" },
+      { "Name": "transform", "File": "transform.exp3.json" },
+      { "Name": "v_eyes", "File": "v_eyes.exp3.json" },
+      { "Name": "bow_back_off", "File": "bow_back_off.exp3.json" },
+      { "Name": "ASMR", "File": "ASMR.exp3.json" },
+      { "Name": "left_stick_x2", "File": "left_stick_x2.exp3.json" },
+      { "Name": "right_stick_x1", "File": "right_stick_x1.exp3.json" },
+      { "Name": "right_stick_x2", "File": "right_stick_x2.exp3.json" },
+
+      { "Name": "speechless_dot", "File": "无语句号.exp3.json" },
+      { "Name": "star_eyes", "File": "星星眼.exp3.json" },
+      { "Name": "finger_heart", "File": "比心.exp3.json" },
+      { "Name": "sweat_drop", "File": "汗滴.exp3.json" },
+      { "Name": "sweating_face", "File": "流汗.exp3.json" },
+      { "Name": "tears", "File": "流泪.exp3.json" },
+      { "Name": "game_console", "File": "游戏机.exp3.json" },
+      { "Name": "heart", "File": "爱心.exp3.json" },
+      { "Name": "angry", "File": "生气.exp3.json" },
+      { "Name": "blinking", "File": "眨晕.exp3.json" },
+      { "Name": "sleeping", "File": "睡觉.exp3.json" },
+      { "Name": "hide_left_short_ponytail", "File": "短马尾左消失.exp3.json" },
+      { "Name": "hide_right_short_ponytail", "File": "短马尾右消失.exp3.json" },
+      { "Name": "face_transform", "File": "脸变化.exp3.json" },
+      { "Name": "syringe", "File": "针筒.exp3.json" },
+      { "Name": "long_ponytail", "File": "长马尾.exp3.json" },
+      { "Name": "hide_long_ponytail", "File": "长马尾发消失.exp3.json" },
+      { "Name": "hide_side_hair", "File": "鬓发消失.exp3.json" },
+      { "Name": "microphone", "File": "麦克风.exp3.json" }
+    ],
+    "Motions": {
+      "Idle": [
+        { "File": "idle.motion3.json" }
+      ]
+    }
+  },
+  "Groups": [
+    {
+      "Target": "Parameter",
+      "Name": "LipSync",
+      "Ids": [
+        "ParamMouthForm2",
+        "ParamMouthOpenY"
+      ]
+    },
+    {
+      "Target": "Parameter",
+      "Name": "EyeBlink",
+      "Ids": [
+        "ParamEyeLOpen",
+        "ParamEyeROpen"
+      ]
+    }
+  ]
+}

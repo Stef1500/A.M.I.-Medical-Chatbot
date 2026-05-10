@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>A.M.I.</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+<script src="https://unpkg.com/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
+<script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+<script src="https://unpkg.com/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='darkmode.js') }}" defer></script>
+</head>
+<body>
+
+<div class="app">
+
+
+<!-- LEFT SIDEBAR -->
+
+
+<aside class="sidebar">
+    <div class="logo">AMI</div>
+    <button id="newChat" class="new-chat" style="color: inherit; text-decoration: none;">+ New Chat</button>
+    <div id="chatMenu" class="menu">
+    </div>
+
+
+
+    <div class="bottom">
+        <a href="/settings" style="color: inherit; text-decoration: none;">⚙️ Settings</a>
+        <br>
+        <!---NF: Change link from "logout" to "account"-->
+        <a href="/account" style="color: inherit; text-decoration: none;"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff"><path d="M367-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z"/></svg> Account</a>
+    </div>
+</aside>
+
+<!-- MAIN CHAT -->
+<main id="chatArea" class="chat">
+
+    <div class="messages" id="messages">
+        <div class="message ai">
+            <div class="avatar-icon">
+            </div>
+
+        </div>
+    </div>
+
+    <div class="input-area">
+        <input id="chatInput" type="text" placeholder="Message AMI...">
+        <button id="sendBtn">➤</button>
+    </div>
+
+</main>
+
+<!-- RIGHT PANEL (AVATAR) -->
+<aside class="right-panel">
+
+    <div class="avatar-card">
+        <div id="status">Starting...</div>
+        <div id="avatar-stage"></div>
+        <h3>A.M.I.</h3>
+    </div>
+
+    <div class="info-card">
+        <p>Live2D avatar reacts to messages.</p>
+    </div>
+
+</aside>
+
+</div>
+
+<script>
+
+//chatlogic
+
+const input = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+const messages = document.getElementById("messages");
+const statusBox = document.getElementById("status");
+let generatingMessage = false;
+
+let currentUtterance = null;
+let ttsAnimationFrame = null;
+let ttsStopRequested = false;
+
+function disableUserInput() {
+    generatingMessage = true;
+    input.disabled = true;
+    sendBtn.disabled = true;
+}
+
+function enableUserInput() {
+    generatingMessage = false;
+    input.disabled = false;
+    sendBtn.disabled = false;
+}
+
+function setStatus(msg) {
+    statusBox.textContent = msg;
+}
+
+function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+}
+
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatReferences(references = []) {
+    if (!references.length) return "";
+
+    const items = references.map(ref => {
+        const label = escapeHtml(ref.label || "");
+        const title = escapeHtml(ref.title || "Untitled");
+        const url = ref.url || "#";
+        return `<li>${label} <a href="${url}" target="_blank" rel="noopener noreferrer">${title}</a></li>`;
+    }).join("");
+
+    return `
+        <div class="references">
+            <strong>References:</strong>
+            <ul>${items}</ul>
+        </div>
+    `;
+}
+
+function formatTTSButton(text, sender) {
+    if (sender !== "ai" || !isLoggedIn) return "";
+
+    const safeText = encodeURIComponent(text);
+    return `
+        <button class="tts-btn" data-tts="${safeText}" title="Read aloud" aria-label="Read aloud">
+            🔊
+        </button>
+    `;
+}
+
+function addMessage(text, sender = "user", references = []) {
+    const div = document.createElement("div");
+    div.className = `message ${sender}`;
+
+    if (sender === "ai") {
+        div.innerHTML = `
+            <div class="avatar-icon">
+                <img src="/static/models/avatar.png" alt="AI">
+            </div>
+            <div class="bubble">
+                <div class="bubble-toolbar">
+                    ${formatTTSButton(text, sender)}
+                </div>
+                <div class="bubble-text">${escapeHtml(text)}</div>
+                ${formatReferences(references)}
+            </div>
+        `;
+    } else {
+        div.innerHTML = `<div class="bubble"><div class="bubble-text">${escapeHtml(text)}</div></div>`;
+    }
+
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+function addTemporaryThinkingMessage() {
+    const div = document.createElement("div");
+    div.className = "message ai thinking";
+    div.id = "thinkingMessage";
+    div.innerHTML = `
+        <div class="avatar-icon">
+            <img src="/static/models/avatar.png" alt="AI">
+        </div>
+        <div class="bubble">AMI is thinking...</div>
+    `;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+function removeTemporaryThinkingMessage() {
+    const thinking = document.getElementById("thinkingMessage");
+    if (thinking) thinking.remove();
+}
+
+//reaction map for backend state and how avatar should react with expressions and effects
+function mapPresentationToAvatar(expressionState, thinkingState, severity) {
+    if (severity === "high" || expressionState === "urgent") {
+        return { face: "angry", effects: ["exclamation"], extras: [] };
+    }
+
+    if (thinkingState === "retrieving_sources" || thinkingState === "generating_response") {
+        return { face: "dazed_eyes", effects: ["question_mark"], extras: [] };
+    }
+
+    switch (expressionState) {
+        case "friendly":
+            return { face: "blush", effects: [], extras: [] };
+
+        case "supportive":
+            return { face: "blush", effects: [], extras: [] };
+
+        case "serious":
+            return { face: "dazed_eyes", effects: [], extras: [] };
+
+        case "urgent":
+            return { face: "angry", effects: ["exclamation"], extras: [] };
+
+        case "neutral":
+        default:
+            return { face: "blush", effects: [], extras: [] };
+    }
+}
+
+function mapThinkingStateToStatus(thinkingState) {
+    switch (thinkingState) {
+        case "urgent_flagged":
+            return "Urgent symptoms detected";
+        case "retrieving_sources":
+            return "Reviewing trusted sources...";
+        case "generating_response":
+            return "Generating response...";
+        case "done":
+        default:
+            return "Ready";
+    }
+}
+
+function getVoicesSafe() {
+    if (!("speechSynthesis" in window)) return [];
+    return window.speechSynthesis.getVoices() || [];
+}
+
+function chooseVoice() {
+    const voices = getVoicesSafe();
+
+    return (
+        voices.find(v => v.name.toLowerCase().includes("zira")) ||
+        voices.find(v => v.name.toLowerCase().includes("aria")) ||
+        voices.find(v => v.name.toLowerCase().includes("samantha")) ||
+        voices.find(v => v.name.toLowerCase().includes("female")) ||
+        voices.find(v => v.lang && v.lang.toLowerCase().startsWith("en")) ||
+        null
+    );
+}
+
+function setMouthValue(openY, form = 0.2) {
+    if (!window.live2dModel?.internalModel?.coreModel) return;
+
+    try {
+        const core = window.live2dModel.internalModel.coreModel;
+        core.setParameterValueById("ParamMouthOpenY", openY, 1);
+        core.setParameterValueById("ParamMouthForm2", form, 1);
+    } catch (err) {
+        console.warn("Lip sync param set failed:", err);
+    }
+}
+
+function stopLipSyncAnimation() {
+    ttsStopRequested = true;
+
+    if (ttsAnimationFrame) {
+        cancelAnimationFrame(ttsAnimationFrame);
+        ttsAnimationFrame = null;
+    }
+
+    setMouthValue(0, 0);
+}
+
+function startLipSyncAnimation(text) {
+    if (!window.live2dModel?.internalModel?.coreModel) return;
+
+    const syllableChunks = (text.match(/[aeiouy]+|[^\s.,!?;:]+/gi) || []).filter(Boolean);
+    const pattern = syllableChunks.map(chunk => {
+        const vowels = (chunk.match(/[aeiouy]/gi) || []).length;
+        if (vowels >= 2) return 0.95;
+        if (vowels === 1) return 0.65;
+        if (chunk.length >= 6) return 0.55;
+        return 0.35;
+    });
+
+    if (!pattern.length) {
+        pattern.push(0.45, 0.7, 0.3);
+    }
+
+    ttsStopRequested = false;
+    let index = 0;
+    let lastTick = 0;
+
+    const step = (timestamp) => {
+        if (ttsStopRequested) return;
+
+        if (!lastTick) lastTick = timestamp;
+        const elapsed = timestamp - lastTick;
+
+        if (elapsed >= 95) {
+            const mouthValue = pattern[index % pattern.length];
+            const mouthForm = mouthValue > 0.7 ? 0.35 : 0.12;
+            setMouthValue(mouthValue, mouthForm);
+            index += 1;
+            lastTick = timestamp;
+        }
+
+        ttsAnimationFrame = requestAnimationFrame(step);
+    };
+
+    ttsAnimationFrame = requestAnimationFrame(step);
+}
+
+function stopSpeaking() {
+    if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+    }
+
+    if (currentUtterance) {
+        currentUtterance.onend = null;
+        currentUtterance.onerror = null;
+        currentUtterance = null;
+    }
+
+    stopLipSyncAnimation();
+    if (window.avatar?.clear) {
+        window.avatar.clear();
+    }
+}
+
+function speakText(text) {
+    if (!isLoggedIn) return;
+    if (!("speechSynthesis" in window)) return;
+    if (!text || !text.trim()) return;
+
+    stopSpeaking();
+
+    currentUtterance = new SpeechSynthesisUtterance(text);
+    currentUtterance.rate = 1.0;
+    currentUtterance.pitch = 1.0;
+    currentUtterance.volume = 1.0;
+
+    const preferredVoice = chooseVoice();
+    if (preferredVoice) {
+        currentUtterance.voice = preferredVoice;
+    }
+
+    currentUtterance.onstart = () => {
+        if (window.avatar?.react) {
+            window.avatar.react("blush", [], []);
+        }
+        startLipSyncAnimation(text);
+    };
+
+    currentUtterance.onend = () => {
+        stopLipSyncAnimation();
+        currentUtterance = null;
+        if (window.avatar?.clear) {
+            window.avatar.clear();
+        }
+    };
+
+    currentUtterance.onerror = () => {
+        stopLipSyncAnimation();
+        currentUtterance = null;
+        if (window.avatar?.clear) {
+            window.avatar.clear();
+        }
+    };
+
+    window.speechSynthesis.speak(currentUtterance);
+}
+
+if ("speechSynthesis" in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+        getVoicesSafe();
+    };
+}
+
+messages.addEventListener("click", (e) => {
+    const btn = e.target.closest(".tts-btn");
+    if (!btn) return;
+
+    const encoded = btn.getAttribute("data-tts");
+    if (!encoded) return;
+
+    const text = decodeURIComponent(encoded);
+    speakText(text);
+});
+
+async function sendMessage() {
+    if (generatingMessage) return;
+
+    const text = input.value.trim();
+    if (!text || !currentChatId) return;
+
+    disableUserInput();
+    stopSpeaking();
+
+    addMessage(text, "user");
+    input.value = "";
+
+    setStatus("Generating response...");
+    addTemporaryThinkingMessage();
+
+    const thinkingAvatarState = mapPresentationToAvatar("serious", "generating_response", "low");
+    window.avatar.react(
+        thinkingAvatarState.face,
+        thinkingAvatarState.effects,
+        thinkingAvatarState.extras
+    );
+
+    try {
+        const res = await fetch("/generate_reply", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                chat_id: currentChatId,
+                text: text
+            })
+        });
+
+        const data = await res.json();
+
+        removeTemporaryThinkingMessage();
+
+        if (!res.ok) {
+            addMessage(`Error: ${data.error || "Something went wrong."}`, "ai");
+            setStatus("ERROR");
+            window.avatar.clear();
+            return;
+        }
+
+        const avatarState = mapPresentationToAvatar(
+            data.expression_state,
+            data.thinking_state,
+            data.severity
+        );
+
+        window.avatar.react(
+            avatarState.face,
+            avatarState.effects,
+            avatarState.extras
+        );
+
+        setStatus(mapThinkingStateToStatus(data.thinking_state));
+        addMessage(data.reply, "ai", data.references || []);
+
+        setTimeout(() => setStatus("Ready"), 1200);
+
+    } catch (err) {
+        removeTemporaryThinkingMessage();
+        console.error(err);
+        addMessage("Sorry, something went wrong while contacting AMI.", "ai");
+        setStatus("ERROR");
+        window.avatar.clear();
+    } finally {
+        enableUserInput();
+    }
+}
+
+sendBtn.onclick = sendMessage;
+input.addEventListener("keydown", e => {
+    if (e.key === "Enter") sendMessage();
+});
+
+
+
+
+
+
+
+// ****************** Chat logic ******************************************
+
+//global variable to keep track of active chat
+let currentChatId = null;
+let isLoggedIn = null;
+
+
+async function createChat(chatName) {
+    const res = await fetch("/create_chat", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ title: chatName })
+    });
+    const data = await res.json();
+
+    currentChatId = data.chat_id;
+
+    addChatToSidebar(data.chat_id, data.title);
+    setActiveChat(data.chat_id);
+    loadChat(currentChatId);
+    document.getElementById("chatInput").focus();
+}
+
+
+// logic to create new chat
+document.getElementById("newChat").addEventListener("click", async () => {
+    let chatName = prompt("Enter chat name:");
+    if (!chatName || chatName.trim() === "") {
+        chatName = "New Chat";
+    }
+    createChat(chatName);
+});
+
+
+// loads all chats to the sidebar
+function loadChats() {
+    fetch("/get_chats")
+        .then(res => res.json())
+        .then(data => {
+            if (data.logged_in === 0) {
+                isLoggedIn = false;
+            } else {
+                isLoggedIn = true;
+            }
+
+            if (!isLoggedIn) {
+                const btn = document.getElementById("newChat");
+                btn.style.display = "none";
+            }
+
+            const chatMenu = document.getElementById("chatMenu");
+            chatMenu.innerHTML = "";
+
+            data.chats.forEach(chat => {
+                addChatToSidebar(chat._id, chat.title);
+            });
+
+            if (data.chats.length > 0) {
+                currentChatId = data.chats[0]._id;
+                setActiveChat(currentChatId);
+                loadChat(currentChatId);
+                document.getElementById("chatInput").focus();
+
+                //Checks if AMI is generating a message, this was hard to figure out.
+                fetch(`/get_chat/${currentChatId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const lastMessage = data.messages[data.messages.length - 1];
+
+                        if (lastMessage && lastMessage.sender === "user") {
+                            disableUserInput();
+
+                            const thinkingAvatarState = mapPresentationToAvatar("serious", "generating_response", "low");
+                            window.avatar.react(
+                                thinkingAvatarState.face,
+                                thinkingAvatarState.effects,
+                                thinkingAvatarState.extras
+                            );
+                            addTemporaryThinkingMessage();
+                            setStatus("Generating response...");
+
+                            const interval = setInterval(() => {
+                                fetch(`/get_chat/${currentChatId}`)
+                                    .then(res => res.json())
+                                    .then(updated => {
+                                        const msgs = updated.messages;
+                                        const newLast = msgs[msgs.length - 1];
+
+                                        if (newLast && newLast.sender === "ai") {
+                                            clearInterval(interval);
+                                            removeTemporaryThinkingMessage();
+                                            setStatus("Ready");
+                                            enableUserInput();
+                                            window.avatar.clear();
+                                            loadChat(currentChatId);
+                                        }
+                                    });
+                            }, 5000);
+                        }
+                    });
+            } else {
+                createChat("First Chat with AMI");
+                setActiveChat(currentChatId);
+            }
+        });
+}
+
+
+// adds a chat to sidebar and redirects the user
+function addChatToSidebar(id, title) {
+    const div = document.createElement("div");
+    div.className = "chat-item";
+    div.textContent = title || "New Chat";
+    div.dataset.id = id;
+
+    div.addEventListener("click", () => {
+        stopSpeaking();
+        loadChat(id);
+        setActiveChat(id);
+    });
+
+    document.getElementById("chatMenu").appendChild(div);
+}
+
+
+//when user clicks in a chat, it loads all messages
+function loadChat(chatId) {
+    currentChatId = chatId;
+
+    fetch(`/get_chat/${chatId}`)
+        .then(res => res.json())
+        .then(data => {
+            const chatBox = document.getElementById("messages");
+            chatBox.innerHTML = "";
+
+            data.messages.forEach(msg => {
+                addMessage(msg.text, msg.sender, msg.references || []);
+            });
+
+            const lastMessage = data.messages[data.messages.length - 1];
+            if (lastMessage && lastMessage.sender === "user") {
+                addTemporaryThinkingMessage();
+            }
+        });
+}
+
+//used when a new chat is created, redirects the user directly to it
+function setActiveChat(chatId) {
+    document.querySelectorAll(".chat-item").forEach(item => {
+        item.classList.remove("active");
+
+        if (item.dataset.id === chatId) {
+            item.classList.add("active");
+        }
+    });
+}
+
+
+
+//load chats
+window.onload = loadChats;
+//***********************************************************
+//avatar logic and sizing
+
+let reactionTimer = null;
+let activeFace = null;
+let activeEffects = [];
+let activeExtras = [];
+
+function getSize() {
+    const c = document.getElementById("avatar-stage");
+    return {
+        container: c,
+        width: c.clientWidth || 320,
+        height: c.clientHeight || 420
+    };
+}
+
+function updateLayout(model, app) {
+    const { width, height } = getSize();
+
+    app.renderer.resize(width, height);
+
+    model.anchor.set(0.5, 1.05);
+    model.x = width / 2;
+    model.y = height * 3;
+    model.scale.set(0.22);
+}
+
+//how model should look
+
+async function applyBaseLook(model) {
+    const permaFiles = [
+        "remove_watermark.exp3.json",
+        "cat_ears_off.exp3.json",
+        "wings_off.exp3.json",
+        "hair_accessories_off.exp3.json",
+        "halo_off.exp3.json",
+        "long_ponytail_off.exp3.json",
+        "short_ponytail_left_off.exp3.json",
+        "short_ponytail_right_off.exp3.json",
+        "side_hair_off.exp3.json"
+    ];
+
+    for (const file of permaFiles) {
+        try {
+            const res = await fetch(`/static/models/${file}`);
+            if (!res.ok) throw new Error(`${file} returned ${res.status}`);
+
+            const exp = await res.json();
+
+            const core = model.internalModel.coreModel;
+
+            exp.Parameters.forEach(p => {
+                core.setParameterValueById(p.Id, p.Value, 1);
+            });
+
+            await sleep(120);
+
+        } catch (e) {
+            console.warn("Base fail:", file, e);
+        }
+    }
+}
+
+//reseter for temporary reactions to go back to idle face 
+
+function resetFace() {
+    if (!window.live2dModel) return;
+
+    const toClear = [];
+
+    if (activeFace) toClear.push(activeFace);
+    toClear.push(...activeEffects);
+    toClear.push(...activeExtras);
+
+    toClear.forEach(e => {
+        try { live2dModel.expression(e); } catch (err) { console.warn("Reset fail:", e, err); }
+    });
+
+    activeFace = null;
+    activeEffects = [];
+    activeExtras = [];
+
+    try {
+        live2dModel.motion("Idle");
+    } catch (err) {
+        console.warn("Idle reset fail:", err);
+    }
+}
+
+//reaction timerse and expressions
+
+function react(face, effects = [], extras = []) {
+    if (!window.live2dModel) return;
+
+    if (reactionTimer) {
+        clearTimeout(reactionTimer);
+        reactionTimer = null;
+    }
+
+    resetFace();
+
+    activeFace = face || null;
+    activeEffects = [...effects];
+    activeExtras = [...extras];
+
+    if (face) {
+        try {
+            live2dModel.expression(face);
+        } catch (err) {
+            console.warn("Face react fail:", face, err);
+        }
+    }
+
+    effects.forEach(e => {
+        try {
+            live2dModel.expression(e);
+        } catch (err) {
+            console.warn("Effect react fail:", e, err);
+        }
+    });
+
+    extras.forEach(e => {
+        try {
+            live2dModel.expression(e);
+        } catch (err) {
+            console.warn("Extra react fail:", e, err);
+        }
+    });
+
+    const isThinkingReaction = effects.includes("question_mark");
+
+    if (!isThinkingReaction) {
+        reactionTimer = setTimeout(() => {
+            resetFace();
+            reactionTimer = null;
+        }, 3000);
+    }
+}
+
+//avatar start up
+
+async function startAvatar() {
+    try {
+        setStatus("Loading...");
+
+        const { container, width, height } = getSize();
+
+        const app = new PIXI.Application({
+            width,
+            height,
+            backgroundAlpha: 0
+        });
+
+        container.appendChild(app.view);
+
+        const model = await PIXI.live2d.Live2DModel.from("/static/models/nurse.model3.json");
+
+        app.stage.addChild(model);
+
+        window.live2dModel = model;
+        window.live2dApp = app;
+
+        updateLayout(model, app);
+
+        try {
+            model.motion("Idle");
+        } catch (err) {
+            console.warn("Idle start fail:", err);
+        }
+
+        await sleep(500);
+        await applyBaseLook(model);
+
+        window.addEventListener("resize", () => {
+            updateLayout(model, app);
+        });
+
+        setStatus("Ready");
+
+    } catch (e) {
+        console.error(e);
+        setStatus("ERROR");
+    }
+}
+
+startAvatar();
+
+window.avatar = {
+    react,
+    clear: resetFace
+};
+
+</script>
+
+</body>
+</html>

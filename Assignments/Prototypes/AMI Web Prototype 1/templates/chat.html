@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AMI Chat</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+<script src="https://unpkg.com/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
+<script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+<script src="https://unpkg.com/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
+
+</head>
+<body>
+
+<div class="app">
+
+<!-- LEFT SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">AMI</div>
+    <button class="new-chat">+ New Chat</button>
+
+    <div class="menu">
+        <p>Recent</p>
+        <div class="chat-item">Sed posuere</div>
+        <div class="chat-item">Phas interdum</div>
+        <div class="chat-item">Sed fermenta</div>
+    </div>
+
+    <div class="bottom">
+        ⚙️ Settings<br>
+        <href></href>
+    </div>
+</aside>
+
+<!-- MAIN CHAT -->
+<main class="chat">
+
+    <div class="messages" id="messages">
+        <div class="message ai">
+            <div class="avatar-icon">🤖</div>
+            <div class="bubble">Hello! I am AMI, your assistant.</div>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <input id="chatInput" type="text" placeholder="Message AMI...">
+        <button id="sendBtn">➤</button>
+    </div>
+
+</main>
+
+<!-- RIGHT PANEL (AVATAR) -->
+<aside class="right-panel">
+
+    <div class="avatar-card">
+        <div id="status">Starting...</div>
+        <div id="avatar-stage"></div>
+        <h3>A.M.I.</h3>
+    </div>
+
+    <div class="info-card">
+        <p>Live2D avatar reacts to messages.</p>
+    </div>
+
+</aside>
+
+</div>
+
+<script>
+
+//chatlogic
+
+const input = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+const messages = document.getElementById("messages");
+
+function addMessage(text, sender="user") {
+    const div = document.createElement("div");
+    div.className = `message ${sender}`;
+
+    if (sender === "ai") {
+        div.innerHTML = `
+            <div class="avatar-icon">🤖</div>
+            <div class="bubble">${text}</div>
+        `;
+    } else {
+        div.innerHTML = `<div class="bubble">${text}</div>`;
+    }
+
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+//reaction map for what people type and how avatar should react with expressions and effects
+function reactionMap(text) {
+    text = text.toLowerCase();
+
+    if (text.includes("?") || text.includes("what") || text.includes("why") || text.includes("how") || text.includes("confused")) {
+        return { face: "dazed_eyes", effects: ["question_mark"], extras: [] };
+    }
+
+    if (text.includes("love") || text.includes("cute") || text.includes("adorable")) {
+        return { face: "blush", effects: ["heart"], extras: ["finger_heart"] };
+    }
+
+    if (text.includes("angry") || text.includes("mad") || text.includes("hate")) {
+        return { face: "angry", effects: ["exclamation"], extras: [] };
+    }
+
+    if (text.includes("tired") || text.includes("sleep")) {
+        return { face: "sleeping", effects: [], extras: [] };
+    }
+
+    if (text.includes("thanks") || text.includes("thank you")) {
+        return { face: "blush", effects: ["heart"], extras: [] };
+    }
+
+    return { face: "blush", effects: [], extras: [] };
+}
+
+function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    input.value = "";
+
+    const r = reactionMap(text);
+    window.avatar.react(r.face, r.effects, r.extras);
+
+    setTimeout(() => {
+        addMessage("This is a placeholder AI response.", "ai");
+    }, 300);
+}
+
+sendBtn.onclick = sendMessage;
+input.addEventListener("keydown", e => {
+    if (e.key === "Enter") sendMessage();
+});
+
+
+//avatar logic and sizing
+
+const statusBox = document.getElementById("status");
+
+let reactionTimer = null;
+let activeFace = null;
+let activeEffects = [];
+let activeExtras = [];
+
+function setStatus(msg) {
+    statusBox.textContent = msg;
+}
+
+function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+}
+
+function getSize() {
+    const c = document.getElementById("avatar-stage");
+    return {
+        container: c,
+        width: c.clientWidth || 320,
+        height: c.clientHeight || 420
+    };
+}
+
+function updateLayout(model, app) {
+    const { width, height } = getSize();
+
+    app.renderer.resize(width, height);
+
+    model.anchor.set(0.5, 1.05);
+    model.x = width / 2;
+    model.y = height * 3;
+    model.scale.set(0.22);
+}
+
+//how model should look
+
+async function applyBaseLook(model) {
+
+    const permaFiles = [
+        "remove_watermark.exp3.json",
+        "cat_ears_off.exp3.json",
+        "wings_off.exp3.json",
+        "hair_accessories_off.exp3.json",
+        "halo_off.exp3.json",
+        "long_ponytail_off.exp3.json",
+        "short_ponytail_left_off.exp3.json",
+        "short_ponytail_right_off.exp3.json",
+        "side_hair_off.exp3.json"
+    ];
+
+    for (const file of permaFiles) {
+        try {
+            const res = await fetch(`/static/models/${file}`);
+            if (!res.ok) throw new Error(`${file} returned ${res.status}`);
+
+            const exp = await res.json();
+
+            const core = model.internalModel.coreModel;
+
+            exp.Parameters.forEach(p => {
+                core.setParameterValueById(p.Id, p.Value, 1);
+            });
+
+            await sleep(120);
+
+        } catch (e) {
+            console.warn("Base fail:", file, e);
+        }
+    }
+}
+
+//reseter for temporary reactions to go back to idle face 
+
+function resetFace() {
+
+    if (!window.live2dModel) return;
+
+    const toClear = [];
+
+    if (activeFace) toClear.push(activeFace);
+    toClear.push(...activeEffects);
+    toClear.push(...activeExtras);
+
+    toClear.forEach(e => {
+        try { live2dModel.expression(e); } catch (err) { console.warn("Reset fail:", e, err); }
+    });
+
+    activeFace = null;
+    activeEffects = [];
+    activeExtras = [];
+
+    try {
+        live2dModel.motion("Idle");
+    } catch (err) {
+        console.warn("Idle reset fail:", err);
+    }
+}
+
+//reaction timerse and expressions
+
+function react(face, effects=[], extras=[]) {
+
+    if (!window.live2dModel) return;
+
+    if (reactionTimer) {
+        clearTimeout(reactionTimer);
+        reactionTimer = null;
+    }
+
+    resetFace();
+
+    activeFace = face || null;
+    activeEffects = [...effects];
+    activeExtras = [...extras];
+
+    if (face) {
+        try {
+            live2dModel.expression(face);
+        } catch (err) {
+            console.warn("Face react fail:", face, err);
+        }
+    }
+
+    effects.forEach(e => {
+        try {
+            live2dModel.expression(e);
+        } catch (err) {
+            console.warn("Effect react fail:", e, err);
+        }
+    });
+
+    extras.forEach(e => {
+        try {
+            live2dModel.expression(e);
+        } catch (err) {
+            console.warn("Extra react fail:", e, err);
+        }
+    });
+
+    reactionTimer = setTimeout(() => {
+        resetFace();
+        reactionTimer = null;
+    }, 3000);
+}
+
+//avatar start up
+
+async function startAvatar() {
+
+    try {
+
+        setStatus("Loading...");
+
+        const { container, width, height } = getSize();
+
+        const app = new PIXI.Application({
+            width,
+            height,
+            backgroundAlpha: 0
+        });
+
+        container.appendChild(app.view);
+
+        const model = await PIXI.live2d.Live2DModel.from("/static/models/nurse.model3.json");
+
+        app.stage.addChild(model);
+
+        window.live2dModel = model;
+        window.live2dApp = app;
+
+        updateLayout(model, app);
+
+        try {
+            model.motion("Idle");
+        } catch (err) {
+            console.warn("Idle start fail:", err);
+        }
+
+        await sleep(500);
+        await applyBaseLook(model);
+
+        window.addEventListener("resize", () => {
+            updateLayout(model, app);
+        });
+
+        setStatus("Ready");
+
+    } catch (e) {
+        console.error(e);
+        setStatus("ERROR");
+    }
+}
+
+startAvatar();
+
+window.avatar = {
+    react,
+    clear: resetFace
+};
+
+</script>
+
+</body>
+</html>
