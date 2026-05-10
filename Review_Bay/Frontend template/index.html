@@ -1,0 +1,234 @@
+<<<<<<< HEAD
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AMI Chat</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+
+
+    <aside class="sidebar">
+        <div class="logo">AMI</div>
+
+        <button class="new-chat">+ New Chat</button>
+
+        <div class="menu">
+            <p>Recent</p>
+            <div class="chat-item">Sed posuere</div>
+            <div class="chat-item">Phas interdum</div>
+            <div class="chat-item">Sed fermenta</div>
+        </div>
+
+        <div class="bottom">
+            ⚙️ Settings<br>
+            👤 Account
+        </div>
+    </aside>
+
+
+    <main class="chat">
+
+        <div class="messages">
+
+            <div class="message ai">
+                <div class="avatar">🤖</div>
+                <div class="bubble">
+                    Hello! I am AMI, your assistant.
+                </div>
+            </div>
+
+            <div class="message user">
+                <div class="bubble">
+                    Lorem ipsum question here?
+                </div>
+            </div>
+
+            <div class="message ai">
+                <div class="avatar">🤖</div>
+                <div class="bubble">
+                    Lorem ipsum response goes here.
+                </div>
+            </div>
+
+        </div>
+
+        <div class="input-area">
+            <input type="text" placeholder="Message AMI...">
+            <button>➤</button>
+        </div>
+    </main>
+
+
+
+
+
+    <aside class="right-panel">
+
+        <div class="avatar-card">
+            <div class="avatar-large">🤖</div>
+            <h3>A.M.I.</h3>
+        </div>
+
+        <div class="info-card">
+            <p>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                Integer sed tellus id nulla blandit dignissim.
+            </p>
+        </div>
+
+
+    </aside>
+
+</div>
+
+</body>
+=======
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Live2D Nurse Test</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #222;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+
+    #status {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 8px;
+      z-index: 20;
+    }
+  </style>
+
+  <script src="https://unpkg.com/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
+  <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+  <script src="https://unpkg.com/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
+</head>
+<body>
+  <div id="status">Starting...</div>
+
+  <script>
+    const statusBox = document.getElementById("status");
+
+    function setStatus(msg) {
+      statusBox.textContent = msg;
+      console.log(msg);
+    }
+
+    function applyBaseLook(model) {
+      try { model.expression("remove_watermark"); } catch (e) {}
+      try { model.expression("cat_ears_off"); } catch (e) {}
+      try { model.expression("wings_off"); } catch (e) {}
+      try { model.expression("hair_accessories_off"); } catch (e) {}
+      try { model.expression("halo_off"); } catch (e) {}
+      try { model.expression("hat_off"); } catch (e) {}
+      try { model.expression("headband"); } catch (e) {}
+    }
+
+    function updateLayout(model) {
+      model.anchor.set(0.5, 1);
+      model.x = window.innerWidth / 2;
+      model.y = window.innerHeight * 0.98;
+      model.scale.set(0.22);
+    }
+
+    async function start() {
+      try {
+        setStatus("Checking libraries...");
+
+        if (!window.PIXI) throw new Error("PIXI failed to load");
+        if (!window.Live2DCubismCore) throw new Error("Cubism Core failed to load");
+        if (!PIXI.live2d) throw new Error("Live2D plugin failed to load");
+        if (!PIXI.live2d.Live2DModel) throw new Error("Live2DModel class missing");
+
+        const app = new PIXI.Application({
+          resizeTo: window,
+          backgroundAlpha: 0
+        });
+
+        document.body.appendChild(app.view);
+
+        setStatus("Loading model...");
+
+        const model = await PIXI.live2d.Live2DModel.from("./nurse.model3.json");
+
+        app.stage.addChild(model);
+
+        updateLayout(model);
+
+        window.live2dApp = app;
+        window.live2dModel = model;
+
+        // Apply toggle-based accessory defaults ONCE only
+        applyBaseLook(model);
+
+        try {
+          model.motion("Idle");
+        } catch (e) {
+          console.warn("Idle motion not started:", e);
+        }
+
+        window.addEventListener("resize", () => {
+          updateLayout(model);
+        });
+
+        setStatus("Model loaded successfully");
+      } catch (err) {
+        console.error(err);
+        setStatus("ERROR: " + err.message);
+      }
+    }
+
+    start();
+
+    window.avatar = {
+      react(face, effects = [], hold = 2500) {
+        if (!window.live2dModel) return;
+
+        if (face) {
+          try { window.live2dModel.expression(face); } catch (e) {}
+        }
+
+        effects.forEach(effect => {
+          try { window.live2dModel.expression(effect); } catch (e) {}
+        });
+
+        // Do not auto-clear yet, because some expressions may also be toggles
+        // and we do not want to flip anything back on.
+      },
+
+      clear() {
+        // Intentionally empty for now.
+        // Reapplying expressions here can re-toggle accessories back on.
+      },
+
+      setScale(scale = 0.22) {
+        if (!window.live2dModel) return;
+        window.live2dModel.scale.set(scale);
+      },
+
+      setPosition(xFactor = 0.5, yFactor = 0.98) {
+        if (!window.live2dModel) return;
+        window.live2dModel.x = window.innerWidth * xFactor;
+        window.live2dModel.y = window.innerHeight * yFactor;
+      }
+    };
+  </script>
+</body>
+>>>>>>> 6a08b5c537d2f4a83882bfa72999ffbded840f07
+</html>

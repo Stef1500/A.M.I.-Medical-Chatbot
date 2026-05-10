@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>A.M.I.</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='checkIn.css') }}">
+    <script src="{{ url_for('static', filename='darkmode.js') }}" defer></script>   
+</head>
+<body>
+        <!--SB: Modified go back so is inside checkin-area and fixed error message positioning-->
+    <div class="checkIn-area">
+
+        <div class="header">
+            <div class="go-back">
+                <a href="/" style="color: inherit; text-decoration: none;">
+                    <h4>← Back</h4>
+                </a>
+            </div>
+
+            <h2>REGISTER</h2>
+            {% with messages  = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <p class="error-message">{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <form method="POST">
+            <input name="username" placeholder="Username" required />
+            <input name="password" type="password" placeholder="Password" required />
+            <br>
+            <button type="submit">Register</button>
+        </form>
+
+        <a href="/login" style="color: inherit; text-decoration: none;">
+            <h6>Already have an account?</h6>
+        </a>
+
+    </div>
+</body>
+</html>

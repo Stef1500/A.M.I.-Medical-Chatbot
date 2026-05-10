@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>A.M.I.</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='account.css') }}">
+    <script src="{{ url_for('static', filename='darkmode.js') }}" defer></script>
+</head>
+<body>
+    <div class = "profile">
+        <div class = "back-to-chat">
+            <a href = "/chat" style = "color: inherit; text-decoration: none;">
+                <h4>← back</h4>
+            </a>
+        </div>
+
+        <div class = "profile-options">
+            {% if session['guest_id'] %}
+                <div class = "profile-ExGMorDA">
+                    <a href = "/login" style = "color: inherit; text-decoration: none;">
+                        <h4>Login</h4>
+                    </a>
+                </div>
+                <div class = "profile-ExGMorDA">
+                    <a href = "/register" style = "color: inherit; text-decoration: none;">
+                        <h4>Create Account</h4>
+                    </a>
+                </div>
+            {% endif %}
+            {% if session['logged_in'] %}
+                <div class = "profile-ExGMorDA">
+                    <a href = "/logout" style = "color: inherit; text-decoration: none;">
+                        <h4>Sign Out</h4>
+                    </a>
+                </div>
+                <!-- NF: Not implemented. Unsure how to change from loggedIn user to guest user-->
+                <!-- SB: fixed-->
+                <div class = "profile-ExGMorDA">
+                    <a href = "/enterguestmode" style = "color: inherit; text-decoration: none;">
+                        <h4>Enter Guest Mode</h4>
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if session['guest_id'] %}
+            <div class = "profile-ExGMorDA">
+                <a href = "/logout" style = "color: inherit; text-decoration: none;">
+                    <h4>Exist Guest Mode</h4>
+                </a>
+            </div>
+        {% endif %}
+        {% if session['logged_in'] %}
+            <div class = "profile-ExGMorDA">
+                <a href = "/deleteaccount" style = "color: inherit; text-decoration: none;">
+                    <h4>Delete Account</h4>
+                </a>
+            </div>
+        {% endif %}
+    </div>
+<!--NF: Please do not touch the text area as it does respect breaklines.-->
+    <div class = "account-benefits">
+        {% if session['guest_id'] %}
+            <textarea rows = 10 cols = 42 wrap = "hard" >Benefits of creating an account with A.M.I.:
+(1) Generate unlimited chats
+
+(2) Save your chats
+
+(3) Use speech-to-text to create prompts
+
+(4) Customize your experience by adding your
+    preferences in settings
+            </textarea>
+        {% endif %}
+    </div>
+</body>
+</html>

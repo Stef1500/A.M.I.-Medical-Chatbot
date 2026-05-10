@@ -1,0 +1,45 @@
+Team Name: TheParents 
+
+Team Members: 
+
+  Stefano Buglione, SAB21S 
+
+  Lauryn Brown, LB16E 
+
+  Marie Schwarz, MCS23G 
+
+  Nicolas Fernandez, NGF22 
+
+Problem Statement: 
+
+  AI is increasingly being used in the healthcare industry as a means to inform, educate, and as a diagnostic tool in medicine. 
+  AI has run into issues such as hallucinations and bias when trying to answer complex or context heavy medical questions. 
+  There must be a better way to communicate to the user how the AI uses sources to respond to their prompts.  
+
+Project Overview: 
+
+  Due to AI hallucinations and AI bias when answering prompts, our team (TheParents) proposes creating a large language model (LLM) that focuses on a specific part of the medical field called personalized medicine. 
+  The LLM will be trained to provide source transparency, where on top of the response prompt, a detailed description of what sources were used to answer the user’s prompt with the provided citation and possible link to the source is provided. 
+  It will be deployed as a website providing a text-based interaction where the AI avatar called AMI (Artificial Medical Intelligence) will converse with the user on topics related to personalized medicine. 
+
+Goals: 
+
+  (1) Train and fine-tune a large language model (LLM) to successfully give advice on prompts related to general health-related issues without diagnosing or prescribing anything to the user. 
+  (2) Use peer-reviewed and reliable sources as dataset for training. 
+  (3) Create an avatar and add text-to-speech to the model for a more interactive experience. 
+  (4) Deploy the LLM as a web-based application for public use.
+
+Stretch Goals: 
+
+  (1) Implement a reliability indicator that communicates the strength level of the source used in the response. 
+  (2) Personalization features introduced based on user preferences that then adapt recommendations while still being ethical and privacy-focused. 
+  (3) Add a speech-to-text function to allow users to interact with the LLM using voice input. 
+  (4) Collect user feedback to evaluate efficiency and effectiveness.
+
+Specifications: 
+
+  The LLM will be trained using a NVidia RTX 5070 ti and/or a cloud service such as google Collab depending on training time and computational cost. 
+  The project backend will be mainly written in Python due to its access to libraries such as:
+    (1) Tensorflow
+    (2) PyTorch
+    (3) and Keras. 

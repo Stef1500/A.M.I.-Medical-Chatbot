@@ -1,0 +1,84 @@
+/*NF: Created "Homepage" page CSS file*/
+/*Reference Material: https://www.youtube.com/watch?v=5yl75eM0Y4A*/
+/*SB: Fixed the menu so its centered in other resolutions*/
+.menu {
+    display: flex;
+    justify-content: center;
+    aligh-items: center;
+
+    position: static;
+    top: 200px;
+    left: 750px;
+
+    margin-top: 80px;
+    width: 100%;
+    border-radius: 15px;
+}
+
+.menu-header {
+    padding: 1rem;
+    color: var(--all-text);
+    --click-icon: 0;
+}
+
+.menu-header h2{
+    animation: fade-down 2s ease;
+    font-size: 40px;
+    color: var(--all-text);
+    font-weight: 700;
+}
+
+.menu-body {
+   padding: 1rem;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+}
+
+.menu-body a {
+   padding: 0.6rem 0.5rem;
+   border-radius: 4px;
+   font-weight: 500;
+}
+
+.menu-login h4{
+    animation: fade-up 2s ease;
+    background-color: transparent;
+    transition: background-color 2s ease;
+    padding: 0;
+    font-size: 20px;
+    border-radius: 15%;
+}
+
+.menu-login:hover h4{
+    background-color: var(--new-chat-background);
+}
+
+.menu-guest h4{
+    animation: fade-up 2s ease;
+    background-color: transparent;
+    transition: background-color 2s ease;
+    padding: 0;
+    font-size: 20px;
+    border-radius: 15%;
+}
+
+.menu-guest:hover h4{
+    background-color: var(--new-chat-background);
+}
+
+.menu-register h4{
+    animation: fade-up 2s ease;
+    background-color: transparent;
+    transition: background-color 2s ease;
+    position: relative;
+    left: 135px;
+    max-width: 80px;
+    padding: 0;
+    font-size: 20px;
+    border-radius: 15%;
+}
+
+.menu-register:hover h4{
+    background-color: var(--new-chat-background);
+}

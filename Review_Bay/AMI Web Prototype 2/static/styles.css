@@ -1,0 +1,279 @@
+/*
+NF: Did overhaul of coloring of system.
+    Root & darkmode will be used to store the light and dark color palettes respectively.
+*/
+:root {
+    --message-list: linear-gradient(90deg, #f7f7f8, #babac4);
+    --menu-bar: radial-gradient(circle, #fafafa, #babac4);
+    --border: #e5e5e5;
+    --new-chat-background: #f0f0f0;
+    --all-text: #1f1f1f;
+    --chat-bubble-ai: #ffffff;
+    --chat-bubble-user: #e5e5e5;
+    --input-background: radial-gradient(circle, #ffffff, #babac4);
+    --input-border: #dddddd;
+    --input-submit: #19c37d;
+    --input-icon: #ffffff;
+    --avatar-bar: radial-gradient(circle, #fafafa, #babac4);
+    --ai-dialogue: #ffffff;
+}
+
+.darkmode {
+    --message-list: linear-gradient(90deg, #1a1a1a, #4d4d4d);
+    --menu-bar: radial-gradient(circle, #4d4d4d, #222222);
+    --border: #4d4d4d;
+    --new-chat-background: #4d4d4d;
+    --all-text: #ffffff;
+    --chat-bubble-ai: #4d4d4d;
+    --chat-bubble-user: #404040;
+    --input-background: radial-gradient(circle, #4d4d4d, #222222);
+    --input-border: #404040;
+    --input-submit: #19c37d;
+    --input-icon: #000000;
+    --avatar-bar: radial-gradient(circle, #4d4d4d, #222222);
+    --ai-dialogue: #404040;
+}
+
+/*
+NF: Simple animations using the @keyframes.
+*/
+@keyframes fade-down {
+  from
+  {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+  opacity: 1; transform: translateY(0);
+  }
+}
+
+@keyframes fade-up {
+  from
+  {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+  opacity: 1; transform: translateY(0);
+  }
+}
+
+@keyframes fade-side-right {
+  from
+  {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+  opacity: 1; transform: translateY(0);
+  }
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: var(--message-list);
+    color: var(--all-text);
+}
+
+.app {
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background: var(--menu-bar);
+    border-right: 1px solid var(--border);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+#chatMenu {
+    flex: 1;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+.logo {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.new-chat {
+    background: var(--new-chat-background);
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 15px;
+}
+
+.chat-item {
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.chat-item:hover {
+    background: #f2f2f2; /*NF: No idea what this does*/
+}
+
+.chat-item.active {
+    background: #e6e6e6; /*NF: No idea what this does*/
+    font-weight: 500;
+}
+
+.bottom {
+    margin-top: auto;
+    font-size: 16px;
+    color: var(--all-text); /*NF: Fixes fundamental link color & underlining overlay issue in HTML link*/
+}
+
+/*NF: For the "person" icon*/
+.bottom svg {
+    position: relative;
+    top: 7px;
+    fill: #000000;
+}
+
+.darkmode .bottom svg {
+    fill: #ffffff;
+}
+
+.chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.message {
+    display: flex;
+    margin-bottom: 18px;
+}
+
+.message.user {
+    justify-content: flex-end;
+}
+
+.avatar {
+    width: 34px;
+    height: 34px;
+    background: #e0e0e0; /*NF: This seems to have an overlay issue.*/
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+}
+
+.bubble {
+    max-width: 60%;
+    padding: 12px 16px;
+    border-radius: 14px;
+    line-height: 1.5;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.message.ai .bubble {
+    background: var(--chat-bubble-ai);
+    border: 1px solid var(--border);
+}
+
+.message.user .bubble {
+    background: var(--chat-bubble-user);
+}
+
+.input-area {
+    display: flex;
+    padding: 15px;
+    border-top: 1px solid var(--border);
+    background: var(--input-background);
+}
+
+.input-area input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+}
+
+.input-area button {
+    margin-left: 10px;
+    padding: 0 18px;
+    border: none;
+    border-radius: 10px;
+    background: var(--input-submit);
+    color: var(--input-icon);
+    cursor: pointer;
+}
+
+.right-panel {
+    width: 260px;
+    background: var(--avatar-bar);
+    border-left: 1px solid var(--border);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.avatar-card {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.avatar-large {
+    width: 70px;
+    height: 70px;
+    background: #e0e0e0; /*NF: This seems to have an overlay issue.*/
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
+    font-size: 30px;
+}
+.avatar-stage {
+    width: 50%;
+    height: 40px;
+}
+.avatar-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+}
+
+.avatar-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.status {
+    color: #19c37d; /*NF: This is not working. Functionality may yet to be implemented.*/
+    font-size: 14px;
+}
+
+.info-card {
+    background: var(--ai-dialogue);
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}

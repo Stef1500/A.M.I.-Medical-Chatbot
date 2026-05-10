@@ -1,0 +1,9 @@
+Project AMI - Team TheParents
+
+This is where any unused or failed code will be placed.
+
+Most of the code here will be from the potential prototype of AMI or code from the peer-reviews.
+
+Please ensure it is documented before committing here of who wrote the code and who is committing the code to this directory. If it doesn't already exist, please add a brief comment of why the code ended up here.
+
+This will help if we need to rollback or can reutilize any code that ends up here.

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>A.M.I.</title>
+    <link rel="stylesheet" href="../static/styles.css">
+    <!--NF:Dark mode implementation-->
+    <script type = "text/javascript" src = "../static/darkmode.js" defer></script>
+</head>
+<body>
+
+<div class="app">
+
+
+    <aside class="sidebar">
+        <div class="logo">AMI</div>
+
+        <!-- create modal for new chats-->
+        <button class="new-chat">+ New Chat</button>
+
+        <div class="menu">
+            <p>Recent</p>
+            <div class="chat-item">Sed posuere</div>
+            <div class="chat-item">Phas interdum</div>
+            <div class="chat-item">Sed fermenta</div>
+        </div>
+
+        <!-- create modal for settings/preferences-->
+        <div class="bottom">
+            <a href="/settings" style = "color: inherit; text-decoration: none;">⚙️ Settings</a><br>
+            <a href="/logout" style = "color: inherit; text-decoration: none;">👤 Logout</a>
+        </div>
+    </aside>
+
+
+    <main class="chat">
+
+        <div class="messages">
+
+            <div class="message ai">
+                <div class="avatar">🤖</div>
+                <div class="bubble">
+                    Hello! I am AMI, your assistant.
+                </div>
+            </div>
+
+            <div class="message user">
+                <div class="bubble">
+                    Lorem ipsum question here?
+                </div>
+            </div>
+
+            <div class="message ai">
+                <div class="avatar">🤖</div>
+                <div class="bubble">
+                    Lorem ipsum response goes here.
+                </div>
+            </div>
+
+        </div>
+
+        <div class="input-area">
+            <input type="text" placeholder="Message AMI...">
+            <button>➤</button>
+        </div>
+    </main>
+
+
+
+
+
+    <aside class="right-panel">
+
+        <div class="avatar-card">
+            <div class="avatar-large">🤖</div>
+            <h3>A.M.I.</h3>
+        </div>
+
+        <div class="info-card">
+            <p>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                Integer sed tellus id nulla blandit dignissim.
+            </p>
+        </div>
+
+
+    </aside>
+
+</div>
+
+</body>
+</html>
